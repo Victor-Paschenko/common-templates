@@ -6,14 +6,25 @@ class S3Service {
         this.bucketName = bucketName;
     }
 
-    upload(key, body) {
-        return this.s3.upload({
-            Key: key, 
-            Body: body,
-            Bucket: this.bucketName
-        }, function(err, data) {
-            console.log(err, data);    
-        }).promise();
+    upload(key) {
+        const PassThrough = require('stream').PassThrough;
+        const Body = new PassThrough();
+        const promise = new Promise((resolve, reject) => {
+            this.s3.upload({
+                Key: key, 
+                Body,
+                Expires: moment().add(1, 'day').toDate(),
+                Bucket: this.bucketName
+            }, function(err, data){
+                if(err) {
+                    return reject(err);
+                }
+
+                return resolve(data);
+            })
+        })
+
+        return { resp: promise, stream: Body };
     }
 
     completeMultipartUpload(key, uploadId, parts) {
